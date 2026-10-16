@@ -28,7 +28,10 @@
     },
     {
       "source": "/socket.io/:path*",
-      "destination": {"service": "backend"}
+      "destination": {
+        "service": "backend",
+        "path": "/index"
+      }
     },
     {
       "source": "/",
