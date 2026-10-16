@@ -9,12 +9,13 @@
       "outputDirectory": "dist"
     },
     "backend": {
-      "root": "server",
-      "framework": "express",
-      "entrypoint": "vercel.mjs",
-      "installCommand": "npm ci --prefix ..",
+      "root": ".",
+      "framework": "node",
+      "entrypoint": "server/vercel.mjs",
+      "installCommand": "npm ci",
+      "buildCommand": "node --check server/vercel.mjs",
       "functions": {
-        "**/*.mjs": {
+        "server/vercel.mjs": {
           "maxDuration": 300
         }
       }
@@ -23,16 +24,11 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": {"service": "backend"}
     },
     {
       "source": "/socket.io/:path*",
-      "destination": {
-        "service": "backend",
-        "path": "/api/health"
-      }
+      "destination": {"service": "backend"}
     },
     {
       "source": "/",
@@ -43,9 +39,7 @@
     },
     {
       "source": "/:path*",
-      "destination": {
-        "service": "web"
-      }
+      "destination": {"service": "web"}
     }
   ]
 }
