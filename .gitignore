@@ -40,4 +40,5 @@ data/
 # Cấu hình IDE trên máy cá nhân
 .idea/
 .DS_Store
-Thumbs.dbgit status --short
+Thumbs.db
+.vercel/
