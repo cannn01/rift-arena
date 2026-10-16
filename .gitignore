@@ -1,0 +1,43 @@
+# Dependencies và build
+node_modules/
+dist/
+build/
+.gradle/
+*.log
+
+# Cấu hình riêng; cho phép file cấu hình mẫu
+.env
+.env.*
+!.env.example
+secrets/
+google-services.json
+GoogleService-Info.plist
+local.properties
+
+# Khóa ký ứng dụng
+*.jks
+*.keystore
+*.pem
+*.p12
+*.pfx
+key.properties
+keystore.properties
+
+# Database
+data/
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+
+# File đóng gói và bản sao lưu
+*.apk
+*.aab
+*.zip
+*.rar
+*-backup/
+
+# Cấu hình IDE trên máy cá nhân
+.idea/
+.DS_Store
+Thumbs.dbgit status --short

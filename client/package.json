@@ -1,0 +1,34 @@
+{
+  "name": "@rift/client",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "android:add": "cap add android && node ../scripts/android-config.mjs",
+    "android:sync": "npm run build && cap sync android && node ../scripts/android-config.mjs",
+    "android:open": "cap open android"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "socket.io-client": "^4.8.1",
+    "firebase": "^12.0.0",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/screen-orientation": "^8.0.0",
+    "@capacitor-firebase/authentication": "8.5.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "dotenv": "^17.2.0"
+  }
+}

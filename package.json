@@ -1,0 +1,21 @@
+{
+  "name": "rift-arena",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "npm run build -w client",
+    "test": "npm run test -w server",
+    "dev:web": "npm run dev -w client",
+    "dev:server": "npm run dev -w server",
+    "android:add": "npm run android:add -w client",
+    "android:sync": "npm run android:sync -w client",
+    "android:open": "npm run android:open -w client"
+  }
+}
