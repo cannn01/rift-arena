@@ -19,15 +19,19 @@ export default function App(){
  useEffect(()=>{if(sound&&!match)void music.current?.play().catch(()=>{});else music.current?.pause();localStorage.setItem('rift.sound',String(sound));},[sound,match]);
  function navigate(s:Screen){if(s!=='online'&&roomRef.current)disconnect();setError('');setNotice('');setScreen(s);}
  async function run(fn:()=>Promise<void>){if(busy)return;setBusy(true);setError('');setNotice('');try{await fn();}catch(e){setError(authError(e));}finally{setBusy(false);}}
- async function token(){let t=await userToken(user);if(!t){const r=await api<{token:string}>('/guest',undefined,{method:'POST',body:JSON.stringify({name})});t=r.token;localStorage.setItem('rift.guest',t);}return t;}
+ async function token(){let t:string|null=await userToken(user);if(!t&&localStorage.getItem('rift.guestName')===name&&localStorage.getItem('rift.guestServer')===(API||window.location.origin))t=localStorage.getItem('rift.guest');if(!t){const r=await api<{token:string}>('/guest',undefined,{method:'POST',body:JSON.stringify({name})});t=r.token;localStorage.setItem('rift.guest',t);localStorage.setItem('rift.guestName',name);localStorage.setItem('rift.guestServer',API||window.location.origin);}return t;}
  async function connect(){if(socketRef.current?.connected)return socketRef.current;
-  socketRef.current?.disconnect();const t=await token(),s=io(API||window.location.origin,{auth:{token:t},reconnection:false,timeout:10000});socketRef.current=s;
-  s.on('room',r=>{roomRef.current=r;setRoom(r);});s.on('start',m=>{setMode('online');setMatch(m);});s.on('fatal',message=>setError(message));s.on('disconnect',()=>{setError('Đã ngắt kết nối server. Vào lại sảnh để tạo hoặc nhập phòng.');});
-  await new Promise<void>((resolve,reject)=>{s.once('connect',()=>resolve());s.once('connect_error',e=>{s.disconnect();reject(new Error(e.message==='xhr poll error'?'Không kết nối được server. Kiểm tra Docker và địa chỉ server.':e.message));});});return s;
+  socketRef.current?.disconnect();
+  let clientId=sessionStorage.getItem('rift.clientId');if(!clientId){clientId=crypto.randomUUID();sessionStorage.setItem('rift.clientId',clientId);}
+  const s=io(API||window.location.origin,{path:'/socket.io/connect',addTrailingSlash:false,transports:['websocket'],auth:cb=>{void token().then(t=>cb({token:t,clientId})).catch(()=>cb({token:'',clientId}));},reconnection:true,reconnectionDelay:300,reconnectionDelayMax:2000,timeout:12000});socketRef.current=s;
+  s.on('resume-missing',message=>{roomRef.current=null;setRoom(null);setMatch(null);if(message)setError(message);});
+  s.on('resume',r=>{roomRef.current=r.room;setRoom(r.room);setSeat(r.seat);setChosen(r.room.players[r.seat].character);setScreen('online');setError('');if(r.match){setMode('online');setMatch(r.match);s.emit('input',0);}});s.on('connect',()=>setError(''));
+  s.on('room',r=>{roomRef.current=r;setRoom(r);});s.on('start',m=>{setMode('online');setMatch(m);});s.on('fatal',message=>setError(message));s.on('disconnect',()=>{setError('Đang kết nối lại server. Phòng được giữ trong thời gian khôi phục.');});
+  await new Promise<void>((resolve,reject)=>{s.once('connect',()=>resolve());s.once('connect_error',e=>{reject(new Error(e.message==='xhr poll error'?'Không kết nối được server. Kiểm tra Docker và địa chỉ server.':e.message));});});return s;
  }
- async function command(event:string,payload:any={}){const s=await connect();return await new Promise<any>((resolve,reject)=>s.timeout(7000).emit(event,payload,(err:any,r:any)=>{if(err)reject(new Error('Server chưa phản hồi. Kiểm tra mạng.'));else if(!r.ok)reject(new Error(r.error));else resolve(r);}));}
+ async function command(event:string,payload:any={}){const s=await connect();return await new Promise<any>((resolve,reject)=>s.timeout(12000).emit(event,payload,(err:any,r:any)=>{if(err)reject(new Error('Server chưa phản hồi. Kiểm tra mạng.'));else if(!r.ok)reject(new Error(r.error));else resolve(r);}));}
  async function enterRoom(create:boolean){const r=await command(create?'create':'join',{code});setRoom(r.room);roomRef.current=r.room;setSeat(r.seat);setChosen(r.room.players[r.seat].character);}
- function disconnect(){socketRef.current?.disconnect();socketRef.current=null;roomRef.current=null;setRoom(null);setError('');}
+ function disconnect(){const s=socketRef.current;if(s?.connected&&roomRef.current)s.timeout(3000).emit('leave',{},()=>s.disconnect());else s?.disconnect();socketRef.current=null;roomRef.current=null;setRoom(null);setError('');}
  function exitMatch(){if(mode==='online')disconnect();setMatch(null);navigate('home');}
  async function profile(){if(!user&&!localStorage.getItem('rift.guest'))return;const r=await api<any>('/me',await token());setStats(r.stats);}
  if(match)return <GameView key={mode} mode={mode} characters={[chosen,opponent]} level={level} socket={socketRef.current} seat={seat} initial={typeof match==='object'?match:null} onExit={exitMatch} sound={sound}/>;

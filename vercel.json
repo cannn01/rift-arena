@@ -1,0 +1,48 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "client",
+      "framework": "vite",
+      "installCommand": "npm ci --prefix ..",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
+    },
+    "backend": {
+      "root": ".",
+      "framework": "node",
+      "entrypoint": "server/vercel.mjs",
+      "installCommand": "npm ci",
+      "buildCommand": "node --check server/vercel.mjs",
+      "functions": {
+        "server/vercel.mjs": {
+          "maxDuration": 300
+        }
+      }
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": {"service": "backend"}
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": {
+        "service": "backend",
+        "path": "/index"
+      }
+    },
+    {
+      "source": "/",
+      "destination": {
+        "service": "web",
+        "path": "/index.html"
+      }
+    },
+    {
+      "source": "/:path*",
+      "destination": {"service": "web"}
+    }
+  ]
+}

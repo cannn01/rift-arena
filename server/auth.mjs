@@ -1,13 +1,15 @@
 import { createHmac, randomUUID, randomBytes, timingSafeEqual } from 'node:crypto';
 import { existsSync,readFileSync,writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { initializeApp,applicationDefault } from 'firebase-admin/app';
+import { initializeApp,applicationDefault,cert,getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { cleanName } from './catalog.mjs';
-export function createAuth({directory,projectId,secret,allowGuest=true,requireVerified=true}){
- const path=join(directory,'guest-secret');
+export function createAuth({directory,projectId,secret,allowGuest=true,requireVerified=true,cloud=false,serviceAccount=process.env.FIREBASE_SERVICE_ACCOUNT_JSON}){
+ if(cloud&&(!secret||secret.length<32))throw new Error('Cloud backend requires GUEST_SECRET with at least 32 characters.');
+ const path=directory?join(directory,'guest-secret'):null;
  if(!secret||secret.startsWith('replace-')){secret=existsSync(path)?readFileSync(path,'utf8'):randomBytes(32).toString('hex');if(!existsSync(path))writeFileSync(path,secret,{mode:0o600});}
- const firebase=projectId?getAuth(initializeApp({credential:applicationDefault(),projectId})):null;
+ const appName='rift-'+projectId;
+ const firebase=projectId?getAuth(getApps().find(a=>a.name===appName)||initializeApp({credential:serviceAccount?cert(JSON.parse(serviceAccount)):applicationDefault(),projectId},appName)):null;
  const sign=value=>createHmac('sha256',secret).update(value).digest('base64url');
  return {
   enabled:!!firebase,

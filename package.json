@@ -16,6 +16,7 @@
     "dev:server": "npm run dev -w server",
     "android:add": "npm run android:add -w client",
     "android:sync": "npm run android:sync -w client",
-    "android:open": "npm run android:open -w client"
+    "android:open": "npm run android:open -w client",
+    "dev:cloud": "npm run dev:cloud -w server"
   }
 }
