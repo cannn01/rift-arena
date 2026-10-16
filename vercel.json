@@ -13,25 +13,39 @@
       "framework": "express",
       "entrypoint": "vercel.mjs",
       "installCommand": "npm ci --prefix ..",
-      "functions": {"**/*.mjs": {"maxDuration": 300}}
+      "functions": {
+        "**/*.mjs": {
+          "maxDuration": 300
+        }
+      }
     }
   },
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": {"service": "backend"}
+      "destination": {
+        "service": "backend"
+      }
     },
     {
       "source": "/socket.io/:path*",
-      "destination": {"service": "backend"}
+      "destination": {
+        "service": "backend",
+        "path": "/api/health"
+      }
     },
     {
       "source": "/",
-      "destination": {"service": "web", "path": "/index.html"}
+      "destination": {
+        "service": "web",
+        "path": "/index.html"
+      }
     },
     {
       "source": "/:path*",
-      "destination": {"service": "web"}
+      "destination": {
+        "service": "web"
+      }
     }
   ]
 }
