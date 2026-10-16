@@ -1,10 +1,14 @@
 # Rift Arena
 
-Game đối kháng 2D cho **web và Android**, xây dựng bằng React, Canvas và Node.js; đóng gói Android bằng Capacitor. Web và APK sử dụng chung backend, cho phép **web ↔ web, web ↔ app và app ↔ app** vào cùng phòng.
+**Rift Arena** là một game đối kháng 2D chạy trên **web và Android**, sử dụng React, Canvas và Node.js. Tôi dùng Capacitor để đóng gói giao diện web thành ứng dụng Android, đồng thời giữ chung backend để người chơi có thể đấu **web ↔ web, web ↔ app và app ↔ app**.
 
-**Chơi ngay:** https://rift-arena-theta.vercel.app/
+Mục tiêu của tôi là triển khai một game có nhiều thao tác và hiệu ứng để đánh giá khả năng đáp ứng của ứng dụng đóng gói bằng Capacitor, đồng thời hỗ trợ đăng nhập và thi đấu giữa các thiết bị.
 
-Bản triển khai hiện tại dùng **Vercel Services + Upstash Redis + Firebase Authentication**. Người chơi không cần mở Docker, laptop của tác giả, USB hoặc Cloudflare Tunnel. Cần Internet khi đăng nhập và đấu online. Đấu máy/luyện tập trong APK xử lý trên thiết bị.
+**Chơi trên web:** [rift-arena-theta.vercel.app](https://rift-arena-theta.vercel.app/)
+
+**Tải ứng dụng Android:** [app-debug.apk](./app-debug.apk) — mở file rồi chọn **Download raw file**, hoặc [tải trực tiếp](https://raw.githubusercontent.com/cannn01/rift-arena/vercel-redis-preview/app-debug.apk).
+
+Tôi đã triển khai web và backend bằng **Vercel Services**, sử dụng **Upstash Redis** để lưu dữ liệu online và **Firebase Authentication** để xác thực. Bản cloud hoạt động độc lập với máy tính cá nhân; người chơi chỉ cần trình duyệt hoặc APK và kết nối Internet để đăng nhập, thi đấu online. Chế độ đấu máy và luyện tập trong APK được xử lý trên thiết bị.
 
 ## Tính năng
 
@@ -19,20 +23,20 @@ Bản triển khai hiện tại dùng **Vercel Services + Upstash Redis + Fireba
 
 ## Cách sử dụng để kiểm thử
 
-1. Mở link web ở trên, hoặc cài APK do tác giả cung cấp riêng.
+1. Mở website hoặc tải `app-debug.apk` theo liên kết phía trên và cài trên điện thoại Android. Nếu được yêu cầu, cho phép cài ứng dụng từ nguồn đã tải APK.
 2. Chọn đấu máy để thử gameplay, hoặc chọn solo cùng bạn bè.
 3. Người thứ nhất tạo phòng; người thứ hai nhập mã phòng trên thiết bị của mình.
 4. Mỗi bên chọn nhân vật và bấm **Sẵn sàng**.
 
 Dùng hai tài khoản/phiên khách khác nhau. Khi thử trên cùng máy, có thể dùng một cửa sổ thường và một cửa sổ ẩn danh. Không dùng cùng tài khoản cho cả hai người.
 
-Nếu APK còn lưu địa chỉ Cloudflare cũ, vào **Cài đặt → Địa chỉ server** và lưu:
+APK hiện tại kết nối backend Vercel. Có thể kiểm tra hoặc cập nhật tại **Cài đặt → Địa chỉ server** bằng địa chỉ:
 
 ```text
 https://rift-arena-theta.vercel.app
 ```
 
-Chỉ nhập URL gốc; không thêm `/api/health` hoặc `/socket.io`. APK cần được build từ mã nguồn mới để có cấu hình WebSocket hiện tại. APK không nằm trong Git; có thể phân phối riêng hoặc qua GitHub Releases.
+Chỉ nhập URL gốc; không thêm `/api/health` hoặc `/socket.io`. Tôi đã đưa bản APK hiện tại vào repository để có thể tải và kiểm thử cùng mã nguồn. Đây là bản **debug phục vụ kiểm thử**; hướng dẫn build APK riêng nằm bên dưới.
 
 ## Kiến trúc và dữ liệu
 
@@ -46,9 +50,9 @@ Chỉ nhập URL gốc; không thêm `/api/health` hoặc `/socket.io`. APK cầ
 | Backend local | Node.js, Socket.IO, SQLite; chạy bằng Docker hoặc Node |
 | Luật chơi | Engine dùng chung trong `shared/engine.mjs`, bước mô phỏng 60 Hz |
 
-Cloud và Docker local là **hai chế độ triển khai khác nhau**. `docker compose` vẫn chạy backend SQLite cũ để phát triển; không tự chuyển sang Redis. Dữ liệu SQLite không tự được chuyển lên Upstash.
+Cloud và Docker local là **hai chế độ triển khai khác nhau**. `docker compose` vẫn chạy backend SQLite dành cho phát triển local; không tự chuyển sang Redis. Dữ liệu SQLite không tự được chuyển lên Upstash.
 
-**Kết nối online đang dùng:** client Socket.IO đặt `path: '/socket.io/connect'`, `addTrailingSlash: false`, `transports: ['websocket']`. Cấu hình này đã được kiểm tra tạo và vào phòng trên deployment hiện tại. Giữ nguyên khi triển khai lại; đổi URL server không đồng nghĩa đổi đường dẫn WebSocket.
+**Kết nối online đang dùng:** client Socket.IO đặt `path: '/socket.io/connect'`, `addTrailingSlash: false`, `transports: ['websocket']`. Tôi đã kiểm tra việc tạo và vào phòng với cấu hình này trên deployment hiện tại. Khi tự triển khai, cần giữ các tùy chọn đường dẫn phù hợp; URL gốc của backend và đường dẫn WebSocket là hai cấu hình riêng.
 
 ## Yêu cầu phát triển
 
@@ -60,17 +64,11 @@ Cloud và Docker local là **hai chế độ triển khai khác nhau**. `docker 
 Các lệnh dưới đây dành cho **Windows CMD**, chạy tại thư mục gốc có `package.json`.
 
 ```bat
-git clone https://github.com/cannn01/rift-arena.git
+git clone --branch vercel-redis-preview https://github.com/cannn01/rift-arena.git
 cd rift-arena
 ```
 
-Sau khi nhánh cloud được hợp nhất, mặc định dùng `main`. Nếu bản cập nhật chưa được hợp nhất:
-
-```bat
-git switch vercel-redis-preview
-```
-
-Sau khi chọn đúng nhánh, cài dependency:
+Tôi đang lưu bản web/app kết nối Vercel trên nhánh **`vercel-redis-preview`**. Lệnh clone phía trên chọn trực tiếp nhánh này. Cài dependency:
 
 ```bat
 npm ci
@@ -123,7 +121,7 @@ Có thể đặt `VITE_API_URL=https://rift-arena-theta.vercel.app` để client
 
 ## Cấu hình đăng nhập
 
-Không cần khóa riêng của tác giả để mở website đã triển khai hoặc cài APK đã cấu hình. Người muốn **tự build hoặc triển khai bản riêng** cần cung cấp cấu hình Firebase của mình.
+Website và APK tôi cung cấp đã được cấu hình đăng nhập; người dùng không cần tự cài Firebase để chơi. Nếu **tự build hoặc triển khai một bản riêng**, hãy tạo cấu hình Firebase cho môi trường đó theo các bước dưới đây.
 
 1. Tạo Firebase project, bật Email/Password, Google và Facebook theo nhu cầu.
 2. Thêm Firebase Web App; điền bốn biến `VITE_FIREBASE_*` trong `.env` cho Docker build, và `client/.env.local` cho Vite/Android build.
@@ -218,6 +216,6 @@ Cloud integration test cần Redis test riêng; xem [docs/VERCEL.md](docs/VERCEL
 
 ## Lưu ý cấu hình và dữ liệu
 
-Chỉ commit mã nguồn và file cấu hình mẫu. `.env`, `client/.env.local`, thư mục `secrets`, service-account JSON và keystore phải giữ riêng. Các file mẫu đi kèm không chứa khóa thật; sao chép rồi tự điền trước khi chạy dịch vụ tương ứng.
+Tôi đưa mã nguồn, file cấu hình mẫu và APK kiểm thử vào repository. Các cấu hình riêng như `.env`, `client/.env.local`, thư mục `secrets`, service-account JSON và keystore được giữ ngoài Git. Khi chạy bản riêng, sao chép các file mẫu rồi điền cấu hình cho dịch vụ tương ứng.
 
-Cloud hỗ trợ khôi phục kết nối trong thời gian cho phép; mất kết nối lâu có thể bị xử thua. CPU best combo lưu trên thiết bị; dữ liệu online lưu trong Redis. Không có công cụ tự di chuyển SQLite sang Redis. Link demo phụ thuộc việc chủ dự án duy trì deployment và hạn mức dịch vụ.
+Cloud hỗ trợ khôi phục kết nối trong thời gian cho phép; mất kết nối lâu có thể bị xử thua. CPU best combo lưu trên thiết bị; dữ liệu online lưu trong Redis. Không có công cụ tự di chuyển SQLite sang Redis. Tôi sử dụng các dịch vụ trong hạn mức miễn phí, vì vậy khả năng truy cập bản demo còn phụ thuộc vào trạng thái deployment và hạn mức sử dụng.
