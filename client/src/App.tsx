@@ -23,7 +23,7 @@ export default function App(){
  async function connect(){if(socketRef.current?.connected)return socketRef.current;
   socketRef.current?.disconnect();
   let clientId=sessionStorage.getItem('rift.clientId');if(!clientId){clientId=crypto.randomUUID();sessionStorage.setItem('rift.clientId',clientId);}
-  const s=io(API||window.location.origin,{transports:['websocket'],auth:cb=>{void token().then(t=>cb({token:t,clientId})).catch(()=>cb({token:'',clientId}));},reconnection:true,reconnectionDelay:300,reconnectionDelayMax:2000,timeout:12000});socketRef.current=s;
+  const s=io(API||window.location.origin,{path:'/socket.io/connect',addTrailingSlash:false,transports:['websocket'],auth:cb=>{void token().then(t=>cb({token:t,clientId})).catch(()=>cb({token:'',clientId}));},reconnection:true,reconnectionDelay:300,reconnectionDelayMax:2000,timeout:12000});socketRef.current=s;
   s.on('resume-missing',message=>{roomRef.current=null;setRoom(null);setMatch(null);if(message)setError(message);});
   s.on('resume',r=>{roomRef.current=r.room;setRoom(r.room);setSeat(r.seat);setChosen(r.room.players[r.seat].character);setScreen('online');setError('');if(r.match){setMode('online');setMatch(r.match);s.emit('input',0);}});s.on('connect',()=>setError(''));
   s.on('room',r=>{roomRef.current=r;setRoom(r);});s.on('start',m=>{setMode('online');setMatch(m);});s.on('fatal',message=>setError(message));s.on('disconnect',()=>{setError('Đang kết nối lại server. Phòng được giữ trong thời gian khôi phục.');});
