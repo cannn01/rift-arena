@@ -17,8 +17,21 @@
     }
   },
   "rewrites": [
-    {"source": "/api/:path*", "destination": {"service": "backend"}},
-    {"source": "/socket.io/:path*", "destination": {"service": "backend"}},
-    {"source": "/:path*", "destination": {"service": "web"}}
+    {
+      "source": "/api/:path*",
+      "destination": {"service": "backend"}
+    },
+    {
+      "source": "/socket.io/:path*",
+      "destination": {"service": "backend"}
+    },
+    {
+      "source": "/",
+      "destination": {"service": "web", "path": "/index.html"}
+    },
+    {
+      "source": "/:path*",
+      "destination": {"service": "web"}
+    }
   ]
 }
