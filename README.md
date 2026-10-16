@@ -1,167 +1,223 @@
-# RIFT ARENA — game đối kháng web + Capacitor Android
+# Rift Arena
 
-Bản 1.0 để chạy và kiểm thử đồ án. Đây là dự án mới, không ghi đè Snake Arena.
+Game đối kháng 2D cho **web và Android**, xây dựng bằng React, Canvas và Node.js; đóng gói Android bằng Capacitor. Web và APK sử dụng chung backend, cho phép **web ↔ web, web ↔ app và app ↔ app** vào cùng phòng.
 
-Có: 4 chiến binh pixel được vẽ bằng mã; CPU 3 cấp; luyện tập; 2 người cùng bàn phím; phòng online 2 người; khách hoặc Firebase Email/Google/Facebook; lưu thắng/thua/combo online trong SQLite; âm nhạc bạn đã cung cấp; nút cảm ứng nhiều ngón; FPS/P95/RTT; đổi server HTTPS trên Android.
+**Chơi ngay:** https://rift-arena-theta.vercel.app/
 
-Đồ họa và hoạt ảnh là bản dựng riêng, không phải sprite được trích từ game tham khảo. Bộ chiêu đã triển khai theo cơ chế bạn mô tả; chưa phải bản sao hoàn chỉnh hoặc đã cân bằng thi đấu chuyên nghiệp. Web/app dùng chung engine nhưng vẫn cần đo trên điện thoại thật. Không cam kết hết lag ở mọi mạng.
+Bản triển khai hiện tại dùng **Vercel Services + Upstash Redis + Firebase Authentication**. Người chơi không cần mở Docker, laptop của tác giả, USB hoặc Cloudflare Tunnel. Cần Internet khi đăng nhập và đấu online. Đấu máy/luyện tập trong APK xử lý trên thiết bị.
 
-## 1. Chạy web trước — không cần đăng nhập để thử
+## Tính năng
 
-Giải nén để có `D:\mobile\rift-arena\package.json`. Giữ nguyên `D:\mobile\snake-arena` làm dự phòng.
+- Bốn nhân vật với bộ chiêu, combo, đỡ, nhảy, né, tuyệt chiêu và bộc phát.
+- Đấu CPU ba mức khó, luyện tập và hai người trên cùng bàn phím.
+- Phòng online hai người: tạo phòng, nhập mã, chọn nhân vật và sẵn sàng.
+- Chơi khách; đăng nhập email/mật khẩu, Google hoặc Facebook khi đã cấu hình Firebase/provider.
+- Xác minh email, khôi phục mật khẩu và liên kết phương thức đăng nhập.
+- Lưu kết quả online, thắng/thua và combo tốt nhất; bảng xếp hạng.
+- Điều khiển cảm ứng nhiều ngón, nhạc nền, hiệu ứng âm thanh, chỉ số FPS/P95/RTT.
+- Đổi địa chỉ backend trong phần cài đặt ứng dụng Android.
 
-Mở Docker Desktop, chờ Docker sẵn sàng. Trong VS Code chọn File → Open Folder → `D:\mobile\rift-arena`. Mở Terminal → New Terminal và chọn **Command Prompt (CMD)**. Chạy từng dòng:
+## Cách sử dụng để kiểm thử
+
+1. Mở link web ở trên, hoặc cài APK do tác giả cung cấp riêng.
+2. Chọn đấu máy để thử gameplay, hoặc chọn solo cùng bạn bè.
+3. Người thứ nhất tạo phòng; người thứ hai nhập mã phòng trên thiết bị của mình.
+4. Mỗi bên chọn nhân vật và bấm **Sẵn sàng**.
+
+Dùng hai tài khoản/phiên khách khác nhau. Khi thử trên cùng máy, có thể dùng một cửa sổ thường và một cửa sổ ẩn danh. Không dùng cùng tài khoản cho cả hai người.
+
+Nếu APK còn lưu địa chỉ Cloudflare cũ, vào **Cài đặt → Địa chỉ server** và lưu:
+
+```text
+https://rift-arena-theta.vercel.app
+```
+
+Chỉ nhập URL gốc; không thêm `/api/health` hoặc `/socket.io`. APK cần được build từ mã nguồn mới để có cấu hình WebSocket hiện tại. APK không nằm trong Git; có thể phân phối riêng hoặc qua GitHub Releases.
+
+## Kiến trúc và dữ liệu
+
+| Thành phần | Công nghệ / nhiệm vụ |
+| --- | --- |
+| Giao diện | React, TypeScript, Vite, Canvas 2D |
+| Android | Capacitor; tài nguyên web được build và chép vào ứng dụng |
+| Xác thực | Firebase Authentication; Firebase Admin kiểm tra token ở backend |
+| Backend cloud | Node.js, Express, Socket.IO, Vercel Services |
+| Dữ liệu cloud | Upstash Redis: phòng, trạng thái, phối hợp instance và thành tích |
+| Backend local | Node.js, Socket.IO, SQLite; chạy bằng Docker hoặc Node |
+| Luật chơi | Engine dùng chung trong `shared/engine.mjs`, bước mô phỏng 60 Hz |
+
+Cloud và Docker local là **hai chế độ triển khai khác nhau**. `docker compose` vẫn chạy backend SQLite cũ để phát triển; không tự chuyển sang Redis. Dữ liệu SQLite không tự được chuyển lên Upstash.
+
+**Kết nối online đang dùng:** client Socket.IO đặt `path: '/socket.io/connect'`, `addTrailingSlash: false`, `transports: ['websocket']`. Cấu hình này đã được kiểm tra tạo và vào phòng trên deployment hiện tại. Giữ nguyên khi triển khai lại; đổi URL server không đồng nghĩa đổi đường dẫn WebSocket.
+
+## Yêu cầu phát triển
+
+- Git và Node.js **24 trở lên**, kèm npm.
+- Docker Desktop nếu chạy bằng Docker Compose.
+- Android Studio và Android SDK nếu build APK; dùng JDK phù hợp với Gradle của dự án (có thể dùng JDK đi kèm Android Studio).
+- Firebase và Upstash nếu tự triển khai đầy đủ bản cloud.
+
+Các lệnh dưới đây dành cho **Windows CMD**, chạy tại thư mục gốc có `package.json`.
 
 ```bat
-cd /d D:\mobile\rift-arena
+git clone https://github.com/cannn01/rift-arena.git
+cd rift-arena
+```
+
+Sau khi nhánh cloud được hợp nhất, mặc định dùng `main`. Nếu bản cập nhật chưa được hợp nhất:
+
+```bat
+git switch vercel-redis-preview
+```
+
+Sau khi chọn đúng nhánh, cài dependency:
+
+```bat
+npm ci
+```
+
+## Chạy local bằng Docker
+
+Lần đầu tạo file cấu hình:
+
+```bat
 copy .env.example .env
+```
+
+Để thử khách và đấu máy, có thể để trống các biến Firebase. Mở Docker Desktop, rồi chạy:
+
+```bat
 docker compose up -d --build
 ```
 
-Chỉ `copy .env.example .env` ở lần đầu; lần sau không ghi đè file đã cấu hình.
+- Web: http://localhost:8081
+- Backend health: http://localhost:3002/api/health
+- Kết quả online local: SQLite trong volume `rift_data`, file `/data/rift.sqlite`.
 
-Mở trình duyệt tại **http://localhost:8081**. Chọn Chơi đơn → nhân vật → độ khó → Vào trận. Không cần Firebase ở bước này. `http://localhost:3002/api/health` phải trả `"ok":true,"game":"rift-arena"`.
+Lần sau chỉ cần `docker compose up -d`. Sau khi đổi mã nguồn, dùng lại `docker compose up -d --build`.
 
-Game này dùng web **8081**, backend **3002**, volume **rift_data**, tách khỏi game rắn dùng 8080/3001. Hai game có thể cùng chạy nếu máy đủ tài nguyên.
-
-Để test online: mở 2 cửa sổ trình duyệt khác nhau (một cửa sổ thường, một ẩn danh) → Solo cùng bạn bè → một máy tạo phòng, máy kia nhập mã → mỗi bên chọn nhân vật và bấm Sẵn sàng. Không dùng cùng tài khoản cho cả hai người. Hai tab chung phiên khách cũng bị chặn kết nối trùng.
-
-Xem lỗi:
 ```bat
-docker compose ps
 docker compose logs --tail=100 backend
-docker compose logs --tail=100 web
+docker compose down
 ```
 
-## 2. Cài Node để phát triển và đóng gói Android
+`down` dừng container; không thêm `-v` nếu cần giữ dữ liệu local.
 
-Docker tự có Node trong container, nhưng lệnh npm ngoài CMD cần Node trên Windows.
+### Sửa giao diện bằng Vite
 
-```bat
-node -v
-npm -v
-```
-
-Dự án cần **Node.js 24 trở lên**. Sau khi đã cài Node:
-
-```bat
-cd /d D:\mobile\rift-arena
-npm ci
-npm test
-npm run build
-```
-
-Nếu muốn sửa code và xem ngay, giữ backend Docker đang chạy rồi chạy `npm run dev:web`. Mở http://localhost:5173; Vite chuyển tiếp API/socket sang backend 3002. Không chạy `npm run dev:server` đồng thời với backend Docker vì cùng cổng. Dữ liệu Node chạy trực tiếp nằm trong `server/data`; dữ liệu Docker nằm trong volume riêng.
-
-## 3. Dùng lại Firebase của game rắn
-
-Bạn đã bật Email/Google/Facebook nên không cần tạo Firebase project mới. Tài khoản vẫn là các tài khoản cũ, thành tích game đối kháng được lưu riêng.
-
-1. Mở `.env` của Snake Arena và `.env` của Rift Arena trong VS Code. Sao chép **giá trị** các biến `FIREBASE_PROJECT_ID`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID` sang file mới. Giữ `PORT=3002`, giữ các origin mới và `VITE_API_URL=` trống cho web Docker.
-2. Sao chép file service account thật của bạn vào `rift-arena\secrets\firebase-admin.json`.
-3. Trong `.env` mới bỏ dấu `#` ở dòng `GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-admin.json`. Tên file phải khớp bước 2.
-4. Tạo cấu hình cho Vite/Android:
+Giữ backend Docker chạy trên cổng 3002. Tạo cấu hình client lần đầu:
 
 ```bat
 copy client\.env.example client\.env.local
 ```
 
-5. Điền bốn biến `VITE_FIREBASE_*` vào `client/.env.local`. Sao chép `FACEBOOK_APP_ID`, `FACEBOOK_CLIENT_TOKEN` và `VITE_NATIVE_FACEBOOK_ENABLED=true` từ cấu hình cũ khi muốn dùng Facebook native. Không điền Facebook App Secret vào client.
-6. Chạy:
+Đặt `VITE_API_URL=` trống trong `client/.env.local`, rồi chạy:
 
 ```bat
-docker compose up -d --build
+npm run dev:web
 ```
 
-7. Trên web vào Tài khoản, thử từng phương thức. Email/mật khẩu phải xác minh email trước khi dùng online. CPU không yêu cầu xác minh.
+Mở http://localhost:5173. Vite proxy `/api` và `/socket.io` sang backend local cổng 3002. Không chạy backend Node và Docker cùng cổng.
 
-File service account là khóa backend: không đặt trong `client/public`, không đưa vào Git hoặc gửi bạn bè. APK không cần chứa khóa này.
+Có thể đặt `VITE_API_URL=https://rift-arena-theta.vercel.app` để client kết nối deployment cloud thay cho local. Khi đó dùng dữ liệu cloud; Firebase client phải thuộc cùng project với backend và backend phải cho phép origin client.
 
-## 4. Kết nối qua Internet, không dùng USB
+## Cấu hình đăng nhập
 
-Dùng Cloudflare tunnel như bạn đã làm, nhưng trỏ vào **web mới cổng 8081** để đi chung API và Socket.IO:
+Không cần khóa riêng của tác giả để mở website đã triển khai hoặc cài APK đã cấu hình. Người muốn **tự build hoặc triển khai bản riêng** cần cung cấp cấu hình Firebase của mình.
 
-```bat
-cloudflared tunnel --url http://localhost:8081
+1. Tạo Firebase project, bật Email/Password, Google và Facebook theo nhu cầu.
+2. Thêm Firebase Web App; điền bốn biến `VITE_FIREBASE_*` trong `.env` cho Docker build, và `client/.env.local` cho Vite/Android build.
+3. Thêm hostname website vào Firebase Authentication → Settings → Authorized domains.
+4. Backend local: đặt service-account JSON tại `secrets/firebase-admin.json`, điền `FIREBASE_PROJECT_ID` và bật dòng `GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-admin.json` trong `.env` khi chạy Docker.
+5. Backend Vercel: dùng biến `FIREBASE_SERVICE_ACCOUNT_JSON` chứa toàn bộ JSON; không dùng đường dẫn `/run/secrets/...`.
+6. Facebook cần cấu hình provider trong Firebase và OAuth redirect URI tương ứng trong Meta. Native Android có cấu hình riêng bên dưới.
+
+Email/mật khẩu cần xác minh email trước khi vào online. Thành tích được lưu bởi backend; Firebase Authentication quản lý danh tính, không phải nơi lưu thành tích của bản này.
+
+## Tự triển khai Vercel + Upstash
+
+Xem hướng dẫn tại [docs/VERCEL.md](docs/VERCEL.md).
+
+Tóm tắt:
+
+1. Import repo vào Vercel ở thư mục gốc, dùng cấu hình Services trong `vercel.json`.
+2. Tạo Upstash Redis; cấu hình biến Redis, Firebase và `GUEST_SECRET` ở Vercel.
+3. Để trống/không đặt `VITE_API_URL` cho web cùng deployment để gọi cùng origin.
+4. Deploy rồi kiểm tra `/api/health`, đăng nhập, tạo phòng và vào phòng bằng hai thiết bị.
+5. Dùng URL HTTPS của deployment làm `VITE_API_URL` khi build APK.
+
+Không cần chạy Cloudflare Tunnel cho deployment này. Vercel và Upstash có hạn mức miễn phí; theo dõi Usage. Chất lượng đấu online phụ thuộc RTT, vị trí backend/Redis, thiết bị và tải hệ thống; dự án chưa có rollback netcode hoàn chỉnh.
+
+## Build ứng dụng Android / APK
+
+Android package hiện tại: **`com.riftarena.game`**. Repo đã có thư mục `client/android`; không chạy `android:add` lại khi thư mục này tồn tại.
+
+Tạo `client/.env.local` từ mẫu nếu chưa có, rồi đặt:
+
+```dotenv
+VITE_API_URL=https://rift-arena-theta.vercel.app
+CAP_APP_ID=com.riftarena.game
+CAP_ANDROID_ALLOW_HTTP=false
 ```
 
-Lấy URL HTTPS vừa được in ra. Mở `URL/api/health` trên điện thoại; phải có `game: rift-arena`. Giữ CMD tunnel và Docker đang chạy.
+Nếu tự triển khai, thay URL bằng deployment của bạn. Điền Firebase web config khi cần đăng nhập; không đưa Redis token hoặc Firebase Admin JSON vào client.
 
-Thêm nguyên origin HTTPS mới vào cuối `ALLOWED_ORIGINS` trong `.env`, cách bằng dấu phẩy. Ví dụ:
+Để bật đăng nhập native:
 
-```env
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:8081,http://localhost,https://localhost,capacitor://localhost,https://TEN-MOI.trycloudflare.com
-```
-
-Sau đó:
-```bat
-docker compose up -d --force-recreate backend
-```
-
-Nếu đăng nhập Google/Facebook **trên website tunnel**, thêm hostname mới vào Firebase Authorized domains và kiểm tra allowlist web của Meta. Native Android dùng cấu hình package/chứng chỉ riêng. URL tunnel thay đổi thì gửi URL mới cho bạn bè; app vào Cài đặt → Địa chỉ server → Kiểm tra và lưu. Chỉ lưu URL gốc, không thêm `/api/health`.
-
-## 5. Tạo app Android riêng để giữ app rắn
-
-Mặc định package mới là **com.riftarena.game**. Cần đăng ký Android app này trong Firebase project hiện tại; file google-services.json của package game rắn không tự dùng được cho package mới.
-
-1. Firebase Console → Project settings → General → Add app → Android → package `com.riftarena.game` → tải `google-services.json` mới. Dùng cùng Firebase project để giữ tài khoản.
-2. Điền `VITE_API_URL=https://TEN-MOI.trycloudflare.com` trong `client/.env.local`. Giữ `CAP_ANDROID_ALLOW_HTTP=false` nếu dùng HTTPS. Giữ `CAP_APP_ID=com.riftarena.game`.
-3. Trong CMD ở thư mục dự án:
-
-```bat
-npm run build
-npm run android:add
-```
-
-`android:add` chỉ chạy lần đầu khi chưa có `client/android`.
-
-4. Chép file Firebase mới vào `client\android\app\google-services.json`.
-5. Chạy:
+- Đăng ký Android App đúng package trong cùng Firebase project; đặt file tải về tại `client/android/app/google-services.json`.
+- Google: thêm SHA-1/SHA-256 của khóa debug hoặc release đang ký vào Firebase; cập nhật file cấu hình khi cần.
+- Facebook: điền `FACEBOOK_APP_ID`, `FACEBOOK_CLIENT_TOKEN`, bật `VITE_NATIVE_FACEBOOK_ENABLED=true` trong `client/.env.local`; cấu hình package, activity và key hash tương ứng trong Meta. Không đặt Facebook App Secret trong client.
 
 ```bat
 npm run android:sync
 npm run android:open
 ```
 
-6. Android Studio mở dự án, chờ Gradle Sync. Cắm điện thoại, bật USB debugging, chọn thiết bị và Run. Sau khi cài xong có thể tháo USB nếu API dùng tunnel HTTPS.
-7. Vào Cài đặt trên app để kiểm tra URL server, rồi thử CPU trước, khách online sau, cuối cùng đăng nhập.
+Trong Android Studio, chờ Gradle Sync rồi Run trên thiết bị hoặc máy ảo. Để tạo APK gửi người khác: **Build → Generate Signed App Bundle / APK → APK → chọn/tạo keystore → release**. Đường dẫn APK cuối cùng được Android Studio thông báo. Giữ lại keystore để các bản cập nhật dùng cùng chữ ký; cập nhật `versionCode` khi phát hành bản mới.
 
-**Google native:** thêm SHA-1 và SHA-256 của khóa debug/release đang dùng vào Firebase Android app mới. Có thể lấy debug bằng Android Studio Terminal tại `client/android`:
+Nếu làm lại Android từ đầu và chưa có `client/android`, chạy `npm run build` rồi `npm run android:add` trước khi thêm file Firebase và sync.
+
+Sau mỗi lần sửa giao diện/game, chạy `npm run android:sync` và build/cài lại APK. Deploy web không tự cập nhật tài nguyên đã đóng gói trong APK. Địa chỉ lưu trong cài đặt app có ưu tiên cao hơn `VITE_API_URL` lúc build.
+
+## Điều khiển
+
+| Hành động | Đơn / online | Local P1 | Local P2 |
+| --- | --- | --- | --- |
+| Di chuyển | A / D | A / D | ← / → |
+| Hướng lên / đỡ | W / S | W / S | ↑ / ↓ |
+| Nhảy | Space | Space | Numpad 0 |
+| Đánh | J | F | Numpad 1 |
+| Kỹ năng | K | G | Numpad 2 |
+| Lăn / né | L | H | Numpad 3 |
+| Tuyệt chiêu | U | R | Numpad 4 |
+| Bộc phát | I | T | Numpad 5 |
+
+Trên điện thoại dùng nút cảm ứng; **▲ là nhảy**. Bộc phát cần đầy 300 năng lượng và điều kiện hành động phù hợp; xem hướng dẫn trong game. Esc tạm dừng các chế độ offline; không dừng trận online.
+
+## Cấu trúc và kiểm tra
+
+| Đường dẫn | Nội dung |
+| --- | --- |
+| `client/src/` | UI, xác thực, input, render, âm thanh và game loop |
+| `client/android/` | Dự án Android Capacitor |
+| `shared/engine.mjs` | Luật chơi, nhân vật, hitbox và CPU |
+| `server/index.mjs` | Backend local SQLite |
+| `server/cloud.mjs` | Phòng và mô phỏng cloud |
+| `server/cloud-store.mjs`, `cloud-bus.mjs` | Lưu trữ và phối hợp qua Redis |
+| `server/vercel.mjs` | HTTP server entrypoint cho Vercel |
+| `scripts/` | Cấu hình và kiểm tra Android |
+| `vercel.json` | Services và routing deployment |
+| `compose.yaml` | Môi trường Docker local |
+
 ```bat
-gradlew.bat signingReport
+npm test
+npm run build
 ```
-Tải lại google-services.json khi cấu hình OAuth thay đổi rồi sync/build lại.
 
-**Facebook native:** trong Meta app hiện tại thêm nền tảng Android hoặc cấu hình Android phù hợp: package `com.riftarena.game`, activity `com.riftarena.game.MainActivity`, key hash của khóa ký APK. App ID/client token dùng lại nếu cùng Meta app. Người không phải tester cần quyền/phát hành Meta phù hợp, như game rắn đã cấu hình.
+Cloud integration test cần Redis test riêng; xem [docs/VERCEL.md](docs/VERCEL.md). Test tự động không thay thế thử nghiệm web/app và đo RTT trên mạng thật.
 
-Nếu muốn dùng package cũ để thử nhanh thì phải chủ động đổi `CAP_APP_ID` **trước android:add** và dùng file Firebase đúng package đó; cài đặt sẽ thay thế app rắn khi cùng package/chữ ký. Khuyến nghị giữ package mới.
+## Lưu ý cấu hình và dữ liệu
 
-Mỗi lần sửa web/game:
-```bat
-npm run android:sync
-```
-Sau đó bấm Run lại trong Android Studio. Sync chỉ chép web build và cập nhật cấu hình; chưa tạo APK release.
+Chỉ commit mã nguồn và file cấu hình mẫu. `.env`, `client/.env.local`, thư mục `secrets`, service-account JSON và keystore phải giữ riêng. Các file mẫu đi kèm không chứa khóa thật; sao chép rồi tự điền trước khi chạy dịch vụ tương ứng.
 
-Nếu cần test USB local: `VITE_API_URL=http://127.0.0.1:3002`, `CAP_ANDROID_ALLOW_HTTP=true`, sync và chạy `adb reverse tcp:3002 tcp:3002` sau mỗi lần kết nối. App mặc định yêu cầu HTTPS khi đổi server qua giao diện; URL HTTP chỉ dành cho cấu hình phát triển này.
-
-## 6. APK gửi bạn bè
-
-Sau khi đã test điện thoại: Android Studio → Build → Generate Signed App Bundle / APK → APK → chọn/tạo keystore → release → Finish. Giữ kỹ keystore, alias và mật khẩu. Thêm SHA/key hash của **release** vào Firebase/Meta, không chỉ debug. Gửi file APK release được Android Studio tạo ra, không gửi source hoặc khóa.
-
-Mọi người cài APK → nhập URL tunnel hiện tại ở Cài đặt → có thể vào phòng cùng bạn. Bạn cần giữ laptop, Docker, tunnel và Internet hoạt động; khi laptop tắt, **online dừng**, còn CPU/luyện tập trong app vẫn hoạt động.
-
-## 7. Điều khiển và phạm vi
-
-Xem trang Chiêu thức trong game. P1: WASD, J/K/U/I; O tuyệt chiêu; P bộc phát. P2 local: mũi tên, 1/2/4/5, 6 tuyệt chiêu. Online mỗi thiết bị dùng P1. Touch hỗ trợ nhiều pointer độc lập. Có nút bật/tắt touch để thử trên desktop.
-
-Server lưu kết quả online, thắng/thua và combo tốt nhất; SQLite trong volume `rift_data`, file `/data/rift.sqlite`. Không dùng SQLite của game rắn. Không có matchmaking công khai, spectate, chat, rollback netcode đầy đủ, hoặc reconnect vào trận đang đánh. Rời/mất kết nối tính thua; tạo phòng mới để đấu lại. CPU best combo được lưu cục bộ, không đưa lên BXH online để tránh tin điểm do client gửi.
-
-Các file quan trọng:
-- `shared/engine.mjs`: fixed-step 60 Hz, hitbox, đòn đánh, năng lượng, CPU.
-- `server/index.mjs`: xác thực, phòng 2 người, kết quả SQLite, snapshot 30 Hz.
-- `client/src/render.ts`: pixel art bằng Canvas 2D, HUD, hiệu ứng.
-- `client/src/GameView.tsx`: game loop, nội suy/dự đoán ngắn giữa snapshot, input bàn phím/touch, đo hiệu năng.
-- `client/src/auth.ts`: Firebase web + native.
-- `client/capacitor.config.ts`, `scripts/android-config.mjs`: cấu hình native.
-
-Xem `docs/BAO-CAO-VA-KIEM-THU.md` để đo và giải thích cho thầy. Xem `docs/VALIDATION.md` để biết phần nào đã kiểm thử và phần nào cần kiểm thử trên máy bạn.
+Cloud hỗ trợ khôi phục kết nối trong thời gian cho phép; mất kết nối lâu có thể bị xử thua. CPU best combo lưu trên thiết bị; dữ liệu online lưu trong Redis. Không có công cụ tự di chuyển SQLite sang Redis. Link demo phụ thuộc việc chủ dự án duy trì deployment và hạn mức dịch vụ.
